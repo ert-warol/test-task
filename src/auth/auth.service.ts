@@ -3,16 +3,22 @@ import * as jwt from 'jsonwebtoken';
 import { hashPassword, isPasswordValid } from '../helpers/working-with-password.helper'
 import { UserService } from '../users/user.service'
 import { User } from "../schemas/users.schema";
+import { CreateUserDto } from "../dto/create-user.dto";
+import { PaginateModel } from "mongoose";
+import { InjectModel } from "@nestjs/mongoose";
+import { MessageDto } from "../dto/messege.dto";
 
 
 @Injectable()
 export class AuthService {
-    constructor(private userService: UserService) {}
+    constructor(@InjectModel(User.name) private userModel: PaginateModel<User>, private userService: UserService) {}
 
-    private users = new Map<string, string>();
+    async register(createUserDto: CreateUserDto): Promise<MessageDto> {
+        createUserDto.password = await hashPassword(createUserDto.password);
 
-    async register(userData: { email: string; password: string }) {
-        this.users.set(userData.email, await hashPassword(userData.password));
+        const createdUser = new this.userModel(createUserDto);
+
+        await createdUser.save();
 
         return { message: 'User registered' };
     }
